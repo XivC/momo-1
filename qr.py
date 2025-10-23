@@ -98,3 +98,17 @@ def qr_algorithm(
         return eigenvalues, normalized_vectors
 
     return eigenvalues, None
+
+
+def eigen_decomposition_qr(matrix: Matrix) -> Tuple[list[float], Matrix]:
+    if not matrix.is_symmetric(tolerance=1e-12):
+        raise ValueError("Спектральное разложение: ожидается симметричная матрица")
+    eigenvalues, eigenvectors = qr_algorithm(
+        matrix.copy(),
+        max_iterations=1000,
+        tolerance=1e-12,
+        return_eigenvectors=True
+    )
+    if eigenvectors is None:
+        raise RuntimeError("qr_algorithm не вернул собственные векторы")
+    return eigenvalues, eigenvectors
