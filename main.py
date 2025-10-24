@@ -2,6 +2,7 @@ from matrix import Matrix
 from qr import qr_algorithm
 from better_svd import truncated_svd_power_iteration
 import numpy as np
+
 if __name__ == "__main__":
     A = Matrix([
         [4.0, 1.0, 1.0],

@@ -18,3 +18,13 @@ def sign(value: float) -> float:
 
     return 1.0 if value == 0.0 else copysign(1.0, value)
 
+
+def validate_vectors_same_length(vector_a: Iterable[Number], vector_b: Iterable[Number]) -> int:
+    try:
+        len_a = len(vector_a)
+        len_b = len(vector_b)
+    except Exception:
+        raise ValueError("Векторы должны поддерживать операцию len()")
+    if len_a != len_b:
+        raise ValueError("Длины векторов должны совпадать")
+    return len_a
