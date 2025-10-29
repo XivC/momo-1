@@ -1,20 +1,15 @@
 import numpy as np
 from collections import deque
 
-# --- Реализация алгоритма линейного поиска с условиями Вольфе ---
-# Этот шаг критически важен для BFGS, он находит оптимальную длину шага alpha.
 
 def line_search_wolfe(f, grad_f, xk, pk, c1=1e-4, c2=0.9):
     """
-    Алгоритм линейного поиска, удовлетворяющий сильным условиям Вольфе.
-    Использует интерполяцию для нахождения оптимального шага.
-    В данной реализации для простоты используется метод золотого сечения.
+    находит оптимальную длину шага alpha
     """
-    alpha = 1.0  # Начальный размер шага
+    alpha = 1.0 
     alpha_low = 0
     alpha_high = np.inf
     
-    # Значения функции и производной в начальной точке (alpha=0)
     phi_0 = f(xk)
     phi_prime_0 = grad_f(xk).dot(pk)
 
@@ -23,7 +18,6 @@ def line_search_wolfe(f, grad_f, xk, pk, c1=1e-4, c2=0.9):
         xk_new = xk + alpha * pk
         phi_alpha = f(xk_new)
 
-        # 1. Проверка условия Армихо (первое условие Вольфе)
         if phi_alpha > phi_0 + c1 * alpha * phi_prime_0:
             alpha_high = alpha
             alpha = (alpha_low + alpha_high) / 2
@@ -32,7 +26,6 @@ def line_search_wolfe(f, grad_f, xk, pk, c1=1e-4, c2=0.9):
         grad_new = grad_f(xk_new)
         phi_prime_alpha = grad_new.dot(pk)
 
-        # 2. Проверка условия кривизны (второе условие Вольфе)
         if abs(phi_prime_alpha) <= -c2 * phi_prime_0:
             return alpha # Условия выполнены
 
@@ -42,7 +35,6 @@ def line_search_wolfe(f, grad_f, xk, pk, c1=1e-4, c2=0.9):
             alpha = (alpha_low + alpha_high) / 2
             continue
         
-        # Если ни одно из условий не выполнено, увеличиваем шаг
         alpha *= 1.5
 
     return alpha
@@ -51,16 +43,6 @@ def line_search_wolfe(f, grad_f, xk, pk, c1=1e-4, c2=0.9):
 # --- Реализация алгоритмов оптимизации ---
 
 def bfgs(f, grad_f, x0, max_iter=100, tol=1e-6):
-    """
-    Реализация алгоритма BFGS.
-    
-    Аргументы:
-    f: целевая функция
-    grad_f: функция, вычисляющая градиент
-    x0: начальная точка
-    max_iter: максимальное число итераций
-    tol: допуск для нормы градиента, критерий остановки
-    """
     n = len(x0)
     # Инициализация приближения обратной матрицы Гессе H как единичной матрицы
     H = np.eye(n)
@@ -69,36 +51,28 @@ def bfgs(f, grad_f, x0, max_iter=100, tol=1e-6):
     history = [xk]
 
     for k in range(max_iter):
-        # 1. Вычислить градиент
         gk = grad_f(xk)
-        
-        # 2. Проверить критерий остановки
         if np.linalg.norm(gk) < tol:
             print(f"BFGS сошелся за {k} итераций.")
             return xk, f(xk), history
 
-        # 3. Найти направление спуска
         pk = -H.dot(gk)
 
-        # 4. Найти оптимальный шаг с помощью линейного поиска
         alpha_k = line_search_wolfe(f, grad_f, xk, pk)
         
-        # 5. Обновить решение
         x_next = xk + alpha_k * pk
         
-        # 6. Вычислить s_k и y_k для обновления H
         sk = x_next - xk
         g_next = grad_f(x_next)
         yk = g_next - gk
         
-        # 7. Обновить обратную матрицу Гессе H по формуле (4)
         rho_k = 1.0 / yk.dot(sk)
         I = np.eye(n)
         term1 = I - rho_k * np.outer(sk, yk)
         term2 = I - rho_k * np.outer(yk, sk)
         H = term1.dot(H).dot(term2) + rho_k * np.outer(sk, sk)
         
-        # Переход к следующей итерации
+
         xk = x_next
         history.append(xk)
         
@@ -106,17 +80,10 @@ def bfgs(f, grad_f, x0, max_iter=100, tol=1e-6):
     return xk, f(xk), history
 
 def lbfgs(f, grad_f, x0, m=10, max_iter=100, tol=1e-6):
-    """
-    Реализация алгоритма L-BFGS.
-    
-    Аргументы:
-    m: размер истории для хранения векторов s и y
-    """
     n = len(x0)
     xk = x0.copy()
     history = [xk]
     
-    # Используем deque для эффективного хранения истории s и y
     s_history = deque(maxlen=m)
     y_history = deque(maxlen=m)
 
@@ -127,11 +94,9 @@ def lbfgs(f, grad_f, x0, m=10, max_iter=100, tol=1e-6):
             print(f"L-BFGS (m={m}) сошелся за {k} итераций.")
             return xk, f(xk), history
 
-        # --- Двухпетельный рекурсивный алгоритм для вычисления H_k * g_k ---
         q = gk.copy()
         
         alphas = []
-        # Первая петля: от k-1 до k-m
         for i in range(len(s_history) - 1, -1, -1):
             rho_i = 1.0 / y_history[i].dot(s_history[i])
             alpha_i = rho_i * s_history[i].dot(q)
@@ -139,19 +104,14 @@ def lbfgs(f, grad_f, x0, m=10, max_iter=100, tol=1e-6):
             alphas.append(alpha_i)
         alphas.reverse()
 
-        # Начальное приближение H0. Часто используется формула H_k^0 = (s_k^T y_k / y_k^T y_k) * I
-        # Для простоты здесь используется единичная матрица I
-        r = q # H0 * q, где H0 = I
+        r = q 
 
-        # Вторая петля: от k-m до k-1
         for i in range(len(s_history)):
             rho_i = 1.0 / y_history[i].dot(s_history[i])
             beta = rho_i * y_history[i].dot(r)
             r += s_history[i] * (alphas[i] - beta)
 
-        pk = -r  # Направление спуска
-        # -------------------------------------------------------------
-
+        pk = -r 
         alpha_k = line_search_wolfe(f, grad_f, xk, pk)
         
         x_next = xk + alpha_k * pk
@@ -160,7 +120,6 @@ def lbfgs(f, grad_f, x0, m=10, max_iter=100, tol=1e-6):
         g_next = grad_f(x_next)
         yk = g_next - gk
         
-        # Обновляем историю, добавляя новые s_k и y_k
         s_history.append(sk)
         y_history.append(yk)
         
