@@ -96,7 +96,6 @@ def main() -> None:
         plt.plot(tol_powers, bfgs_times, marker="o", label="BFGS")
         plt.plot(tol_powers, lbfgs_times, marker="o", label="L-BFGS(m=5)")
         plt.plot(tol_powers, adam_times, marker="o", label="Adam")
-        plt.xscale("log")
         plt.yscale("log")
         plt.xlabel("требуемая точность (10^n)")
         plt.ylabel("время, с")
